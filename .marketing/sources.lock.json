@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/coreyhaines31/marketingskills",
+  "commit": "5b2c0007766c6a1cf1d53fd8fc73e979e0821022",
+  "retrieved_at": "2026-09-27",
+  "license": "MIT",
+  "license_path": "licenses/corey-haines-MIT.txt",
+  "license_sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591",
+  "adaptations": [
+    {
+      "path": "skills/agency-product-marketing/SKILL.md",
+      "upstream_path": "skills/product-marketing/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/coreyhaines31/marketingskills/5b2c0007766c6a1cf1d53fd8fc73e979e0821022/skills/product-marketing/SKILL.md",
+      "upstream_sha256": "6dfd6bd485f62448385844cb9eceefcee0977c843d7a1c9e6077590d4e19d1ec",
+      "adapted_sha256": "df6a2ea01cdd0f1890a10cf82822fd8687901f460cb081441443f5348bf527a8"
+    },
+    {
+      "path": "skills/agency-customer-research/SKILL.md",
+      "upstream_path": "skills/customer-research/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/coreyhaines31/marketingskills/5b2c0007766c6a1cf1d53fd8fc73e979e0821022/skills/customer-research/SKILL.md",
+      "upstream_sha256": "ae4769147f63dd5aea1308a0fddd85473601164893f58111dce738738226317e",
+      "adapted_sha256": "b26e368cfdbd03e85665d5677e3ef56b66b81e8bd50d9f05971844cc5378a66a"
+    },
+    {
+      "path": "skills/agency-launch/SKILL.md",
+      "upstream_path": "skills/launch/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/coreyhaines31/marketingskills/5b2c0007766c6a1cf1d53fd8fc73e979e0821022/skills/launch/SKILL.md",
+      "upstream_sha256": "1d5f5e6a4caaa5b62604a8df324b060eb99da567e65e9fc5a69b9999c61325b2",
+      "adapted_sha256": "04609e63a48590386d53be3f3a918f7d080beabb09ae09c3da746c1e55639db9"
+    },
+    {
+      "path": "skills/agency-copywriting/SKILL.md",
+      "upstream_path": "skills/copywriting/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/coreyhaines31/marketingskills/5b2c0007766c6a1cf1d53fd8fc73e979e0821022/skills/copywriting/SKILL.md",
+      "upstream_sha256": "ce18137ae31ab37f261078501431649865ab6b403054d97490754e82acb002d8",
+      "adapted_sha256": "5c59b9bcd2b09eeada8e2d2e7f050d3c94f4201724658f243926b9b2402266c6"
+    },
+    {
+      "path": "skills/agency-content-strategy/SKILL.md",
+      "upstream_path": "skills/content-strategy/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/coreyhaines31/marketingskills/5b2c0007766c6a1cf1d53fd8fc73e979e0821022/skills/content-strategy/SKILL.md",
+      "upstream_sha256": "0ad572d607884c561668810f77cd21bbe3e0508c64090f2997661a728360f946",
+      "adapted_sha256": "8f3e69e94e5ded23022d79347a2527e3d617f96b395f2da47fc2493eb5218f7b"
+    },
+    {
+      "path": "skills/agency-analytics/SKILL.md",
+      "upstream_path": "skills/analytics/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/coreyhaines31/marketingskills/5b2c0007766c6a1cf1d53fd8fc73e979e0821022/skills/analytics/SKILL.md",
+      "upstream_sha256": "3eda97d96b2329daa933b6fdb94bf81aaa1196e3e344e56a8805f972a7438404",
+      "adapted_sha256": "86110378b8e1b4918520755eec6397b590e659b6733eea592d860b9a3ecd9fc3"
+    }
+  ]
+}

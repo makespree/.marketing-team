@@ -1,0 +1,26 @@
+{
+  "name": "marketing-agency",
+  "version": "0.1.0",
+  "description": "A portable creative agency with a Director, expert bench, reusable skills and project vault.",
+  "author": {
+    "name": "Samay Patel"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Marketing Agency",
+    "shortDescription": "Strategy, creative production and review in one project vault",
+    "longDescription": "Coordinate research, positioning, launches, copy, artwork, reference adaptations and review using ten reusable skills and an eight-role bench. Project records stay in the active project's vault. Production uses the host's available tools.",
+    "developerName": "Samay Patel",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Help me market this product.",
+      "Adapt this reference to our brand.",
+      "Review this campaign and suggest the next move."
+    ]
+  }
+}

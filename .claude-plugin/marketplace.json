@@ -1,0 +1,12 @@
+{
+  "name": "marketing-agency",
+  "description": "Reusable marketing strategy, creative production and review for any project.",
+  "owner": { "name": "Makespree" },
+  "plugins": [
+    {
+      "name": "marketing-agency",
+      "source": "./plugins/marketing-agency",
+      "description": "A reusable marketing agency with an expert bench, ten skills and a project vault."
+    }
+  ]
+}

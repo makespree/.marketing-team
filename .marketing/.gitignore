@@ -1,0 +1,6 @@
+vault/*
+!vault/README.md
+project.json
+.cache/
+dist/
+__pycache__/
