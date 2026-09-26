@@ -3,15 +3,17 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
+import tempfile
 import uuid
 import zipfile
 from pathlib import Path
 
 KIT = Path(__file__).resolve().parents[1]
 PORTABLE = ("START.md", "AGENTS.md", "CLAUDE.md", "CAPABILITIES.md", "RUNTIMES.md",
-            "SOURCES.md", "sources.lock.json", ".gitignore", "skills", "scripts", "tests", "licenses")
+            "SOURCES.md", "sources.lock.json", ".gitignore", "skills", "scripts", "tests", "licenses", "runtimes")
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 
 
@@ -172,6 +174,93 @@ def copy_kit(target):
     return target
 
 
+def install_studio(project):
+    root = Path(project).resolve(strict=True)
+    if not root.is_dir():
+        raise ValueError('Project must be an existing directory.')
+    target = root / 'marketing'
+    if target.exists() or target.is_symlink():
+        raise ValueError('marketing/ already exists. Inspect and reuse it; no overwrite or adaptation performed.')
+    source = KIT / 'runtimes/review-studio'
+    no_links(source)
+    forbidden = {'project.json', 'workspace', '.local', '.cache', 'node_modules', 'lib', 'dist', 'firebase.cloud.json'}
+    if any(p.name in forbidden or p.name.startswith('.env') for p in source.rglob('*')):
+        raise ValueError('Runtime template contains project data or installed state.')
+    shutil.copytree(source, target, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    return target
+
+
+def stage_review(project, job_id, revision_id, title):
+    kit = project_root(project)
+    studio = kit.parent / 'marketing'
+    if studio.is_symlink() or (studio / 'project.json').is_symlink():
+        raise ValueError('Studio/config cannot be a symbolic link.')
+    no_links(studio / 'workspace')
+    config = json.loads((studio / 'project.json').read_text())
+    binding = hashlib.sha256(str(kit.parent).encode()).hexdigest()[:12]
+    if config.get('sourceBinding') != binding:
+        raise ValueError('Studio belongs to another path. Verify same-project clone identity before rebinding; never auto-adapt it.')
+    revision = kit / 'vault/jobs' / slug(job_id) / 'revisions' / slug(revision_id)
+    no_links(revision)
+    manifest = json.loads((revision / 'manifest.json').read_text())
+    identity = json.loads((kit / 'project.json').read_text())
+    if (manifest.get('project_id'), manifest.get('job_id'), manifest.get('revision')) != (identity['project_id'], job_id, revision_id):
+        raise ValueError('Manifest identity does not match this project/job/revision.')
+    caption = manifest['caption']
+    if not isinstance(caption, str) or len(caption.encode("utf-16-le")) // 2 > 2200 or hashlib.sha256(caption.encode()).hexdigest() != manifest['caption_sha256']:
+        raise ValueError('Caption changed or exceeds the studio limit.')
+    title = title.strip()
+    if not title or len(title.encode("utf-16-le")) // 2 > 120:
+        raise ValueError('Use a title of 1–120 characters.')
+    placement = manifest['placement']
+    if placement not in ('feed', 'reel', 'story') or manifest['language'] not in [x['code'] for x in config['languages']]:
+        raise ValueError('Configure the language and use feed, reel or story placement.')
+    entries = manifest['files']
+    if not 1 <= len(entries) <= (10 if placement == 'feed' else 1):
+        raise ValueError('Feed accepts 1–10 files; reels/stories exactly one.')
+    selected = []
+    for entry in entries:
+        source = selected_file(revision, entry['path'])
+        if source.stat().st_size != entry['bytes'] or not 0 < entry['bytes'] <= 20 * 1024 * 1024 or digest(source) != entry['sha256']:
+            raise ValueError('Selected media changed or exceeds 20 MiB. Make a new revision.')
+        with source.open('rb') as stream:
+            header = stream.read(16)
+        mp4 = header[4:8] == b'ftyp' and header[8:12] in (b'isom', b'iso2', b'mp41', b'mp42', b'avc1', b'M4V ')
+        image = header.startswith(b'\x89PNG\r\n\x1a\n') or header.startswith(b'\xff\xd8\xff') or (header[:4] == b'RIFF' and header[8:12] == b'WEBP')
+        if not (image or mp4) or (placement == 'reel' and not mp4):
+            raise ValueError('Studio accepts PNG/JPEG/WebP/MP4; reels require MP4.')
+        selected.append(source)
+    if len(set(selected)) != len(selected) or len({entry['sha256'] for entry in entries}) != len(entries):
+        raise ValueError('Duplicate media selection or duplicate content.')
+    # One job maps to one review card; revisions retain a stable manifest identity.
+    destination = studio / 'workspace/agency' / slug(job_id)
+    assets = destination / 'revisions' / slug(revision_id)
+    names = [f'{i:02}-{f.name}' for i, f in enumerate(selected, 1)]
+    content = {'title': title, 'caption': caption, 'language': manifest['language'], 'placement': placement,
+               'files': [(assets / n).relative_to(studio / 'workspace').as_posix() for n in names]}
+    frozen = assets / 'submission.json'
+    if frozen.exists() and json.loads(frozen.read_text()) != content:
+        raise ValueError('This staged revision differs. Create a new revision.')
+    for source, name in zip(selected, names):
+        dest = assets / name
+        if dest.exists() and digest(dest) != digest(source):
+            raise ValueError('Existing staged media differs; it was not overwritten.')
+    assets.mkdir(parents=True, exist_ok=True)
+    for source, name in zip(selected, names):
+        dest = assets / name
+        if not dest.exists():
+            with dest.open('xb') as out, source.open('rb') as inp:
+                shutil.copyfileobj(inp, out)
+    if not frozen.exists():
+        save(frozen, content)
+    target = destination / 'manifest.json'
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf8', dir=destination, delete=False) as out:
+        out.write(json.dumps(content, indent=2, ensure_ascii=False) + '\n')
+        temporary = out.name
+    os.replace(temporary, target)
+    return target
+
+
 def package(out):
     # Stage outside KIT so exports cannot recursively copy their own output.
     import tempfile
@@ -182,7 +271,7 @@ def package(out):
         raise ValueError("Package output already exists; use a fresh output directory.")
     with tempfile.TemporaryDirectory(prefix="agency-package-") as temp:
         stage = copy_kit(Path(temp) / "marketing-agency")
-        common = {"name": "marketing-agency", "version": "0.1.0", "description": "A portable creative agency with a Director, expert bench, reusable skills and project vault.", "author": {"name": "Samay Patel"}, "skills": "./skills/"}
+        common = {"name": "marketing-agency", "version": "0.2.0", "description": "A portable creative agency with a Director, expert bench, reusable skills and project vault.", "author": {"name": "Samay Patel"}, "skills": "./skills/"}
         save(stage / ".codex-plugin/plugin.json", {**common, "interface": {
             "displayName": "Marketing Agency",
             "shortDescription": "Strategy, creative production and review in one project vault",
@@ -252,11 +341,17 @@ def main():
     p.add_argument("--placement", choices=("feed", "reel", "story", "web", "other"), required=True)
     for name in ("export", "package"):
         commands.add_parser(name).add_argument("--out", required=True)
+    commands.add_parser("install-studio").add_argument("--project", required=True)
+    p = commands.add_parser("stage-review")
+    for key in ("project", "job", "revision", "title"):
+        p.add_argument("--" + key, required=True)
     commands.add_parser("check")
     a = parser.parse_args()
     if a.command == "init": result = init(a.project, a.name)
     elif a.command == "job": result = job(a.project, a.id)
     elif a.command == "manifest": result = manifest(a.project, a.job, a.revision, a.caption, a.files, a.language, a.placement)
+    elif a.command == "install-studio": result = install_studio(a.project)
+    elif a.command == "stage-review": result = stage_review(a.project, a.job, a.revision, a.title)
     elif a.command == "export": result = copy_kit(Path(a.out) / ".marketing")
     elif a.command == "package": result = package(a.out)
     else: result = check()

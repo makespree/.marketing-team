@@ -72,3 +72,20 @@ generated, checked-in bundle required for GitHub marketplace installation.
 Build into a fresh output directory, review it, then replace the distributed
 bundle. Keep both copies in the same commit. Never edit only the generated copy.
 Project vaults and research scratch are excluded from this repository.
+
+## Private review website
+
+The agency now includes the existing Firebase review studio as an optional runtime.
+Use it to upload creatives privately, let invited people sign in with Google,
+approve/request changes/reject, and keep exact revision history. Approval does
+not publish.
+
+Ask the Director: **“Connect this project's agency to the private review studio.”**
+It reuses an existing marketing/ folder or installs the clean app with
+`python3 .marketing/scripts/agency.py install-studio --project .`. Each new product
+needs its own reviewed Firebase configuration and one-time authorized deployment.
+No GarbaRush identity, private content or credentials are shipped.
+
+The [workflow](.marketing/skills/agency-director/references/firebase-review.md)
+covers setup, selected-file staging, verified upload receipts and feedback-driven
+revisions. Local production works without Firebase; the optional app uses Node 22.

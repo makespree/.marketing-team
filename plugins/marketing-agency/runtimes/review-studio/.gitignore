@@ -1,0 +1,11 @@
+node_modules/
+lib/
+dist/
+.local/
+.cache/
+project.json
+firebase.local.json
+firebase.cloud.json
+workspace/
+.env*
+*.log

@@ -31,3 +31,8 @@ Reading a role profile is not spawning an agent. Record actual execution mode
 (native specialists or sequential roles) in the job brief. The Director owns
 integration; specialists own exactly their assigned files. They must preserve
 other workers' edits. No automatic background work is claimed.
+
+The optional runtimes/review-studio app is copied into the active project by
+install-studio; it is never started or configured inside the plugin cache.
+stage-review bridges hash-verified agency manifests to its ordered upload schema.
+Cloud credentials, deployment targets and reviewer membership stay project-local.

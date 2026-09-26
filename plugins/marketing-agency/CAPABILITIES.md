@@ -32,3 +32,10 @@ The generic restage method includes a timestamp comparison helper. It does not
 pretend to detect every cut, understand a reference, or validate creative quality.
 Use the installed video-analysis tools, inspect the frames, and supply reviewed
 cut times. Real UI demonstrations require actual captures, not generated screens.
+
+## Optional private review studio
+The bundled Firebase app provides invited Google sign-in, private media, ordered
+carousels, captions, review decisions and revision history after project-specific
+setup. install-studio copies clean code; stage-review copies selected hash-verified
+exports. Neither command deploys. The runtime README and Director Firebase
+workflow cover setup, receipts and revision handoff.

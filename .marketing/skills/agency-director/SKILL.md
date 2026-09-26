@@ -59,6 +59,11 @@ it from tool access or a reference campaign's budget. Review approval and permis
 to distribute are separate. Upload only selected job files unless wider backup
 was requested. No secrets or another project's cloud settings travel with the kit.
 
+For a private Firebase gallery with sign-in and human approvals, use the
+[Firebase review workflow](references/firebase-review.md). Reuse the active
+project's studio, or install the optional clean runtime once. This routes creation,
+upload, feedback and revisions without rebuilding the review app.
+
 ## Return
 Give the user the result or the decision needed, artifact links, what was checked,
 and any actual limitation. Record the next step in the job. Avoid a tour of agent

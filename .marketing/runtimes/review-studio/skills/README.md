@@ -1,0 +1,1 @@
+Optional project-specific team guides belong here. No prior product guides are included. The reusable agency remains in its instruction bundle; do not copy plugin skills into the cloud library automatically.

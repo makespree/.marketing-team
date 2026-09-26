@@ -1,0 +1,48 @@
+import {useEffect,useState,type ReactNode} from 'react';
+import {ratio,type AnalyticsSnapshot,type AnalyticsRow,type Metrics} from '../server/analytics-model';
+export type LinkedPost = {id:string; title:string; caption:string; assets:string[]; revision:number; status:string};
+type Props = {api:(path:string,init?:RequestInit)=>Promise<Response>; renderMedia:(id:string)=>ReactNode; onOpenPost:(id:string)=>void};
+function Creative({ad,api,renderMedia,onOpenPost}:Props&{ad:AnalyticsRow}) {
+ const [post,setPost]=useState<LinkedPost>(),[error,setError]=useState(''),[slide,setSlide]=useState(0);
+ useEffect(()=>{let active=true;setPost(undefined);setError('');setSlide(0);if(ad.postId)api(`/posts/${ad.postId}`).then(r=>r.json()).then(d=>{if(active)setPost(d.post);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[ad.postId,api]);
+ return <article className="analytics-creative" id={`creative-${ad.id}`}>
+  <h3>{ad.name}</h3>
+  {!ad.postId?<p className="muted">No studio post linked to this ad yet.</p>:error?<p role="alert">{error}</p>:!post?<p>Loading creative…</p>:<>
+   <div className="analytics-creative-media">{post.assets[slide]?renderMedia(post.assets[slide]!):<p>No media available.</p>}</div>
+   {post.assets.length>1&&<div className="analytics-slides"><button aria-label={`Previous slide for ${ad.name}`} disabled={slide===0} onClick={()=>setSlide(n=>n-1)}>Previous</button><span>{slide+1} / {post.assets.length}</span><button aria-label={`Next slide for ${ad.name}`} disabled={slide===post.assets.length-1} onClick={()=>setSlide(n=>n+1)}>Next</button></div>}
+   <strong>{post.title}</strong><p className="muted">Current studio content · revision {post.revision}. May differ from the version used in this ad.</p>
+   <details><summary>Read caption</summary><p className="analytics-caption">{post.caption}</p></details>
+   <button className="primary" onClick={()=>onOpenPost(post.id)}>Open studio post</button>
+  </>}
+ </article>;
+}
+export function Analytics({api,renderMedia,onOpenPost}:Props){
+ const [snapshots,setSnapshots]=useState<AnalyticsSnapshot[]>([]),[selected,setSelected]=useState(''),[campaign,setCampaign]=useState('all'),[busy,setBusy]=useState(true),[error,setError]=useState(''),[reload,setReload]=useState(0),[truncated,setTruncated]=useState(false);
+ useEffect(()=>{let active=true;setBusy(true);setError('');api('/analytics').then(r=>r.json()).then(d=>{if(!active)return;setSnapshots(d.snapshots);setSelected(old=>d.snapshots.some((s:AnalyticsSnapshot)=>s.id===old)?old:d.snapshots[0]?.id??'');setTruncated(d.truncated);}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setBusy(false);});return()=>{active=false;};},[reload]);
+ const report=snapshots.find(s=>s.id===selected),rows=report?.ads.filter(a=>campaign==='all'||a.campaignId===campaign)??[];
+ const metrics=campaign==='all'?report?.totals:report?.campaigns.find(c=>c.id===campaign)?.metrics;
+ const money=(minor:number|null|undefined)=>minor==null?'Not reported':new Intl.NumberFormat('en-IN',{style:'currency',currency:report!.currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(minor/10**report!.currencyDigits);
+ const num=(n:number|null|undefined)=>n==null?'Not reported':n.toLocaleString('en-IN');
+ const percent=(n:number|null)=>n===null?'Not reported':`${n.toFixed(2)}%`;
+ const unitCost=(m:Metrics)=>ratio(m.spendMinor,m.landingPageViews);
+ const ranked=rows.filter(r=>r.metrics.landingPageViews!==null&&r.metrics.landingPageViews>0&&r.metrics.spendMinor!==null).sort((a,b)=>unitCost(a.metrics)!-unitCost(b.metrics)!);
+ const best=ranked[0],maxCost=Math.max(1,...ranked.map(r=>unitCost(r.metrics)!));
+ function table(items:AnalyticsRow[],isCampaign=false){return <div className="analytics-table-wrap"><table className="analytics-table"><caption className="sr-only">{isCampaign?'Campaign results':'Creative results'}</caption><thead><tr><th scope="col">{isCampaign?'Campaign':'Creative'}</th><th scope="col">Spend</th><th scope="col">Impressions</th><th scope="col">Reach</th><th scope="col">Link clicks</th><th scope="col">Link CTR</th><th scope="col">Cost / link click</th><th scope="col">Landing-page views</th><th scope="col">Cost / landing-page view</th></tr></thead><tbody>{items.map(r=><tr key={r.id}><th scope="row"><strong>{r.name}</strong><div className="analytics-creative-links">{(isCampaign ? rows.filter(a=>a.campaignId===r.id) : [r]).map(a=><a key={a.id} href={`#creative-${a.id}`}>{isCampaign?a.name:'View creative'}</a>)}</div><small>{r.id}{!r.hasData?' · No data returned':''}</small></th><td>{money(r.metrics.spendMinor)}</td><td>{num(r.metrics.impressions)}</td><td>{num(r.metrics.reach)}</td><td>{num(r.metrics.linkClicks)}</td><td>{percent(ratio(r.metrics.linkClicks,r.metrics.impressions,100))}</td><td>{money(ratio(r.metrics.spendMinor,r.metrics.linkClicks))}</td><td>{num(r.metrics.landingPageViews)}</td><td>{money(unitCost(r.metrics))}</td></tr>)}</tbody></table></div>;}
+ return <section className="analytics-page" aria-label="Ad analytics">
+  <div className="analytics-header"><div><p className="eyebrow">Paid performance</p><h1>Ad analytics</h1><p>Shared campaign results, saved from Hermoso and Meta.</p></div><button disabled={busy} onClick={()=>setReload(n=>n+1)}>{busy?'Loading…':'Reload saved reports'}</button></div>
+  {error&&<div role="alert" className="error">{error}</div>}
+  {!report&&!busy&&!error&&<div className="analytics-empty"><h2>No campaign reports yet</h2><p>Once a campaign snapshot is synced to this workspace, the team can review it here.</p></div>}
+  {report&&metrics&&<>
+   <div className="analytics-filters"><label>Reporting day<select value={selected} onChange={e=>{setSelected(e.target.value);setCampaign('all');}}>{snapshots.map(s=><option key={s.id} value={s.id}>{s.reportDate} · {s.currency} · account {s.adAccountId}</option>)}</select></label><label>Campaign<select value={campaign} onChange={e=>setCampaign(e.target.value)}><option value="all">All campaigns in this report</option>{report.campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label></div>
+   <p className="analytics-asof"><strong>{report.reportDate}</strong> · {report.reportingTimezone} · Last synced {new Date(report.fetchedAt).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST</p>
+   <div className="analytics-kpis">{[['Spend',money(metrics.spendMinor)],['Impressions',num(metrics.impressions)],['Link clicks',num(metrics.linkClicks)],['Landing-page views',num(metrics.landingPageViews)],['Cost / landing-page view',money(unitCost(metrics))]].map(([label,value])=><article key={label}><span>{label}</span><strong>{value}</strong></article>)}</div>
+   <div className="analytics-summary"><article><h2>What worked</h2>{best?<><p><strong>{best.name}</strong> had the lowest reported cost per landing-page view: <strong>{money(unitCost(best.metrics))}</strong> from {num(best.metrics.landingPageViews)} views.</p><p className="muted">This is a comparison within this report, not a controlled experiment or a prediction of future results.</p></>:<p>Not enough landing-page data to compare creatives yet.</p>}</article><article><h2>Traffic quality</h2><strong className="analytics-rate">{percent(ratio(metrics.landingPageViews,metrics.linkClicks,100))}</strong><p>Reported landing-page views per link click. Repeated actions and Meta attribution can affect this ratio.</p></article></div>
+   {!!ranked.length&&<section className="analytics-chart"><h2>Cost per landing-page view</h2><p className="muted">Lower is better. Same reporting day and currency.</p>{ranked.map(r=><div className="analytics-bar-row" key={r.id}><span>{r.name}</span><div className="analytics-bar-track" aria-hidden="true"><div style={{width:`${unitCost(r.metrics)!/maxCost*100}%`}}/></div><strong>{money(unitCost(r.metrics))}</strong></div>)}</section>}
+   <section className="analytics-creatives" aria-label="Campaign creatives"><h2>Campaign creatives</h2><div className="analytics-creative-grid">{rows.map(ad=><Creative key={ad.id+':'+ad.postId} ad={ad} api={api} renderMedia={renderMedia} onOpenPost={onOpenPost}/>)}</div></section>
+   <section className="analytics-results"><h2>Creative comparison</h2>{table(rows)}</section>
+   <section className="analytics-results"><h2>Campaign totals</h2>{table(report.campaigns.filter(c=>campaign==='all'||c.id===campaign),true)}</section>
+   <details className="analytics-notes"><summary>How to read this report</summary><ul><li>Only the selected campaigns are included. Totals come from campaign-level results; ad rows are not added again.</li><li>Reach is shown per campaign or creative. It is not summed because people can overlap.</li><li>Link CTR uses link clicks divided by impressions. All clicks ({num(metrics.clicks)}) also include other interactions and are a different metric.</li><li>Landing-page views use Meta’s landing_page_view action only. The overlapping omni metric is not added.</li><li>Traffic does not establish game plays, venue enquiries or ticket sales. Those conversions are not measured here.</li><li>Missing values show “Not reported”. Spend is shown in the verified ad-account currency. Meta can revise attribution after a snapshot is saved.</li><li>The day follows Meta’s ad-account reporting calendar; the connector does not expose its timezone setting. The sync timestamp above is displayed in IST.</li><li>Reload reads the latest Firestore snapshot. It does not contact Meta or change budgets. A teammate can run the documented analytics sync to fetch a fresh snapshot.</li></ul></details>
+   {truncated&&<p className="muted">Showing the latest 30 saved reports. Older reports remain in Firestore.</p>}
+  </>}
+ </section>;
+}

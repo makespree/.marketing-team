@@ -43,6 +43,13 @@ before retrying. Platform success, studio review, queued scheduling and verified
 publication are distinct events even if a project's UI labels them differently.
 Use agency-content-review and agency-analytics.
 
+## Private review website
+Use [Firebase review](firebase-review.md) to connect the agency vault to the
+optional existing studio runtime: selected exports → verified private cloud card →
+human review → feedback → versioned revision. Reuse an existing project deployment.
+A new project gets its own configuration and invited reviewers. Deployment is a
+one-time authorized setup, not a content-generation side effect.
+
 ## When blocked
 Unavailable generation or renderer: finish the brief, asset specification and editable
 source when possible; identify the missing capability. No automatic paid substitution.

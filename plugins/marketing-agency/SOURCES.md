@@ -60,3 +60,10 @@ attached to a technical or creative pass. Each role's profile links its detailed
 [Claude subagents](https://code.claude.com/docs/en/sub-agents) informed packaging.
 See [RUNTIMES.md](RUNTIMES.md) for the distinction between a built bundle and a
 verified installation. Image/video engines remain the active host's capabilities.
+
+## First-party review runtime
+The optional Firebase review studio reuses the owner’s existing standalone
+marketing application. runtimes/review-studio/UPSTREAM.json records the source
+commit, per-file hashes and deliberate adaptations. No prior product data,
+branding guides, Firebase configuration or credentials are included. Runtime
+dependency versions and licenses remain governed by its npm lockfile.

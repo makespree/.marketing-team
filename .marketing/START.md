@@ -11,6 +11,7 @@ research, original campaigns, supplied references and revisions.
 
 - [Expert bench](skills/agency-director/references/bench.md)
 - [Workflow routing](skills/agency-director/references/workflows.md)
+- [Private Firebase review workflow](skills/agency-director/references/firebase-review.md)
 - [Project vault contract](skills/agency-director/references/vault.md)
 - [Available skills and engines](CAPABILITIES.md)
 - [Sources, licenses and adaptations](SOURCES.md)
@@ -66,3 +67,11 @@ python3 .marketing/scripts/agency.py check
 python3 .marketing/tests/check.py
 ~~~
 The package has no dependency on a host repository, Firebase project, studio or publisher.
+
+## Optional review website
+
+The clean Firebase review app is bundled under runtimes/review-studio. Use
+`python3 .marketing/scripts/agency.py install-studio --project .` only when the
+project has no marketing/ studio. It copies code without credentials, prior
+content or cloud identity. Read its README for local startup and one-time hosted
+setup. No website is deployed by installing the agency.

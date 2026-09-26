@@ -72,6 +72,45 @@ def main():
         assert path.read_bytes() == original
         print("PASS: project identity, non-overwrite, selected files, hashes and revision safety")
 
+        # The review bridge copies only hashed selections, preserving order/history.
+        import base64
+        studio = agency.install_studio(project)
+        assert not (studio / "project.json").exists() and not (studio / ".local").exists()
+        rejects(lambda: agency.install_studio(project))
+        config = {"sourceBinding": agency.hashlib.sha256(str(project.resolve()).encode()).hexdigest()[:12], "languages": [{"code": "en"}]}
+        agency.save(studio / "project.json", config)
+        # Installed npm bins are symlinks, but never part of staging/backup.
+        (studio / "node_modules").mkdir()
+        (studio / "node_modules/tool").symlink_to(context)
+        review_job = agency.job(project, "review-card")
+        rev = review_job / "revisions/v1"
+        image = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")
+        (rev / "exports/one.png").write_bytes(image)
+        (rev / "exports/two.png").write_bytes(image + b"\n")
+        (rev / "caption.txt").write_text("Caption")
+        (rev / "private.txt").write_text("Do not upload")
+        agency.manifest(project, "review-card", "v1", "caption.txt", ["exports/two.png", "exports/one.png"], "en", "feed")
+        staged = agency.stage_review(project, "review-card", "v1", "Title")
+        body = json.loads(staged.read_text())
+        assert [Path(f).name for f in body["files"]] == ["01-two.png", "02-one.png"]
+        assert not list((studio / "workspace").rglob("private.txt"))
+        assert agency.stage_review(project, "review-card", "v1", "Title") == staged
+        rejects(lambda: agency.stage_review(project, "review-card", "v1", "Changed title"))
+        import shutil
+        shutil.copytree(rev, review_job / "revisions/v2")
+        rev2 = review_job / "revisions/v2"
+        (rev2 / "manifest.json").unlink()
+        (rev2 / "caption.txt").write_text("Revised caption")
+        agency.manifest(project, "review-card", "v2", "caption.txt", ["exports/one.png"], "en", "feed")
+        assert agency.stage_review(project, "review-card", "v2", "Title") == staged
+        assert (staged.parent / "revisions/v1/submission.json").exists()
+        assert json.loads(staged.read_text())["caption"] == "Revised caption"
+        (rev2 / "exports/one.png").write_bytes(image + b"changed")
+        rejects(lambda: agency.stage_review(project, "review-card", "v2", "Title"))
+        (studio / "project.json").write_text(json.dumps({**config, "sourceBinding": "another-project"}))
+        rejects(lambda: agency.stage_review(project, "review-card", "v1", "Title"))
+        print("PASS: clean studio install, binding, selected staging, order, hashes and stable revision identity")
+
         # Exercise a used source kit, not just an empty export.
         source = agency.copy_kit(base / "used-source/.marketing")
         agency.init(source.parent, "Private brand")

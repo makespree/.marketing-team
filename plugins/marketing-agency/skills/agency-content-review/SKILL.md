@@ -37,3 +37,8 @@ It cannot approve, upload or publish. Keep source drafts out of the final upload
 A destination adapter must verify the stored media/card and save a receipt.
 On ambiguous success, reconcile before retrying. Don't back up the whole vault
 as an upload side effect. Existing publication receipts survive a revision.
+
+For the bundled Firebase destination, follow the Director’s
+[private review workflow](../agency-director/references/firebase-review.md).
+Use stage-review to bridge the selected manifest; the cloud receipt and human
+review state remain distinct from this creative self-review.
